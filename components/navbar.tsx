@@ -34,7 +34,6 @@ export default function Navbar() {
         }`}
       >
         <div className="container flex items-center justify-between py-4">
-          {/* Logo */}
           <a
             href="#top"
             className="flex items-center gap-2 text-sm font-bold tracking-[-0.04em]"
@@ -46,13 +45,11 @@ export default function Navbar() {
             GRIDWISE
           </a>
 
-          {/* Desktop nav */}
-          <div className="hidden items-center gap-7 md:flex" role="list">
+          <div className="hidden items-center gap-7 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                role="listitem"
                 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#737373] transition hover:text-[#0a0a0a]"
               >
                 {link.label}
@@ -60,7 +57,6 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right side */}
           <div className="flex items-center gap-3">
             <button
               id="demo-mode-toggle"
@@ -82,14 +78,9 @@ export default function Navbar() {
               className="group inline-flex items-center gap-2.5 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-[#292929]"
             >
               Open Dashboard
-              <ArrowRight
-                size={13}
-                className="transition group-hover:translate-x-0.5"
-                aria-hidden
-              />
+              <ArrowRight size={13} className="transition group-hover:translate-x-0.5" aria-hidden />
             </a>
 
-            {/* Hamburger */}
             <button
               className="ml-1 md:hidden"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -102,7 +93,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Demo mode badge */}
       <AnimatePresence>
         {demoMode && (
           <motion.div
@@ -117,7 +107,6 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div

@@ -1,186 +1,135 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Zap, Activity, Sliders, Cpu, Calendar, Search } from 'lucide-react';
-import { calculateOverallGridStress } from '../lib/optimizationEngine';
-import { GridTransformerNode } from '../types/ev';
+import { useEffect, useState } from "react";
+import { Zap, ArrowRight, Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-interface NavbarProps {
-  activeTab: 'driver' | 'forecaster' | 'operator' | 'map';
-  setActiveTab: (tab: 'driver' | 'forecaster' | 'operator' | 'map') => void;
-  transformers: GridTransformerNode[];
-  activeReservationsCount: number;
-  onOpenReservations: () => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  simulatedHour: number;
-  activeScenario: string;
-  onResetSimulation: () => void;
-}
+const navLinks = [
+  { href: "#platform", label: "Platform" },
+  { href: "#stations", label: "Stations" },
+  { href: "#optimise", label: "Optimisation" },
+  { href: "#analytics", label: "Analytics" },
+  { href: "#prototype", label: "Prototype" },
+];
 
-export const Navbar: React.FC<NavbarProps> = ({
-  activeTab,
-  setActiveTab,
-  transformers,
-  activeReservationsCount,
-  onOpenReservations,
-  searchQuery,
-  setSearchQuery,
-  simulatedHour,
-  activeScenario,
-  onResetSimulation
-}) => {
-  const gridStats = calculateOverallGridStress(transformers);
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [demoMode, setDemoMode] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const formatHourLabel = (h: number) => {
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12.toString().padStart(2, '0')}:00 ${ampm}`;
-  };
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        
-        {/* Brand / Logo (Campus Flow inspiration) */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black text-white font-extrabold text-sm tracking-tighter">
-            CG
+    <>
+      <nav
+        aria-label="Main navigation"
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "border-b border-[#e5e5e5] bg-white/80 backdrop-blur-xl"
+            : "border-b border-transparent bg-transparent"
+        }`}
+      >
+        <div className="container flex items-center justify-between py-4">
+          <a
+            href="#top"
+            className="flex items-center gap-2 text-sm font-bold tracking-[-0.04em]"
+            aria-label="GRIDWISE home"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#0a0a0a] text-white">
+              <Zap size={13} fill="currentColor" aria-hidden />
+            </span>
+            GRIDWISE
+          </a>
+
+          <div className="hidden items-center gap-7 md:flex">
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#737373] transition hover:text-[#0a0a0a]"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold tracking-tight text-black font-sans">
-                Charge<span className="text-neutral-500 font-normal">Grid</span>
-              </span>
-              <span className="rounded-full bg-neutral-100 border border-neutral-300 px-2.5 py-0.5 text-[10px] font-bold text-black uppercase tracking-wider">
-                #86 B&W AI
-              </span>
-            </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              id="demo-mode-toggle"
+              onClick={() => setDemoMode((d) => !d)}
+              aria-pressed={demoMode}
+              className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#737373] sm:flex"
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                  demoMode ? "animate-pulse bg-[#0a0a0a]" : "bg-[#d4d4d4]"
+                }`}
+              />
+              {demoMode ? "Demo Mode" : "Live Mode"}
+            </button>
+
+            <a
+              href="#dashboard"
+              id="open-dashboard-btn"
+              className="group inline-flex items-center gap-2.5 rounded-full bg-[#0a0a0a] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-[#292929]"
+            >
+              Open Dashboard
+              <ArrowRight size={13} className="transition group-hover:translate-x-0.5" aria-hidden />
+            </a>
+
+            <button
+              className="ml-1 md:hidden"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
+      </nav>
 
-        {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 rounded-2xl bg-neutral-100 p-1 border border-neutral-200">
-          <button
-            onClick={() => setActiveTab('driver')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-              activeTab === 'driver'
-                ? 'bg-black text-white shadow-sm'
-                : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
-            }`}
+      <AnimatePresence>
+        {demoMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full border border-[#e5e5e5] bg-white/90 px-3 py-2 text-[9px] font-semibold uppercase tracking-widest shadow-lg backdrop-blur"
           >
-            <Zap className="h-3.5 w-3.5" />
-            Smart Finder
-          </button>
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#0a0a0a]" />
+            Simulation active
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-              activeTab === 'map'
-                ? 'bg-black text-white shadow-sm'
-                : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
-            }`}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed inset-x-0 top-[65px] z-40 border-b border-[#e5e5e5] bg-white/95 px-5 py-6 backdrop-blur-xl md:hidden"
           >
-            <Sliders className="h-3.5 w-3.5" />
-            Geospatial Map
-          </button>
-
-          <button
-            onClick={() => setActiveTab('forecaster')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-              activeTab === 'forecaster'
-                ? 'bg-black text-white shadow-sm'
-                : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
-            }`}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            Demand Forecaster
-          </button>
-
-          <button
-            onClick={() => setActiveTab('operator')}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-              activeTab === 'operator'
-                ? 'bg-black text-white shadow-sm'
-                : 'text-neutral-600 hover:text-black hover:bg-neutral-200/60'
-            }`}
-          >
-            <Cpu className="h-3.5 w-3.5" />
-            Grid Command
-          </button>
-        </nav>
-
-        {/* Right Status Badge & Reservation Pass Drawer */}
-        <div className="flex items-center gap-3">
-          
-          {/* Grid Status Pill */}
-          <div className="hidden lg:flex items-center gap-3 rounded-xl bg-white border border-neutral-200 px-3.5 py-1.5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-black"></span>
-              <span className="text-xs font-bold font-mono text-black">{formatHourLabel(simulatedHour)}</span>
+            <div className="flex flex-col gap-5">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-sm font-medium text-[#0a0a0a]"
+                >
+                  {link.label}
+                </a>
+              ))}
             </div>
-
-            <div className="h-3 w-[1px] bg-neutral-300"></div>
-
-            <div className="flex items-center gap-1.5 text-xs font-mono">
-              <span className="text-neutral-500">Grid Stress:</span>
-              <span className="font-bold text-black underline">
-                {gridStats.stressPercentage}%
-              </span>
-            </div>
-          </div>
-
-          {/* Bookings / Passes Button */}
-          <button
-            onClick={onOpenReservations}
-            className="relative flex items-center gap-2 rounded-xl bg-black hover:bg-neutral-800 text-white px-4 py-2 text-xs font-bold transition-all shadow-sm"
-          >
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">My Passes</span>
-            {activeReservationsCount > 0 && (
-              <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-[10px] font-extrabold text-black px-1">
-                {activeReservationsCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Tab Switcher */}
-      <div className="flex md:hidden overflow-x-auto border-t border-neutral-200 bg-white px-2 py-2 gap-2">
-        <button
-          onClick={() => setActiveTab('driver')}
-          className={`flex-1 min-w-[100px] rounded-lg px-2.5 py-1.5 text-center text-xs font-bold ${
-            activeTab === 'driver' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
-          Finder
-        </button>
-        <button
-          onClick={() => setActiveTab('map')}
-          className={`flex-1 min-w-[100px] rounded-lg px-2.5 py-1.5 text-center text-xs font-bold ${
-            activeTab === 'map' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
-          Map
-        </button>
-        <button
-          onClick={() => setActiveTab('forecaster')}
-          className={`flex-1 min-w-[100px] rounded-lg px-2.5 py-1.5 text-center text-xs font-bold ${
-            activeTab === 'forecaster' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
-          Forecaster
-        </button>
-        <button
-          onClick={() => setActiveTab('operator')}
-          className={`flex-1 min-w-[100px] rounded-lg px-2.5 py-1.5 text-center text-xs font-bold ${
-            activeTab === 'operator' ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
-          Grid Command
-        </button>
-      </div>
-    </header>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
-};
+}

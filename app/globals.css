@@ -40,6 +40,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 /* ─── Container ─────────────────────────────────────────────────────────────── */
@@ -90,7 +91,7 @@ body {
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f4f4f4; }
 ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
@@ -104,6 +105,7 @@ input[type="range"] {
   border-radius: 2px;
   outline: none;
   cursor: pointer;
+  width: 100%;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -140,16 +142,6 @@ input[type="range"].white-thumb::-webkit-slider-thumb {
   }
 }
 
-/* ─── SVG network animation ─────────────────────────────────────────────────── */
-@keyframes flow {
-  from { stroke-dashoffset: 260; }
-  to   { stroke-dashoffset: 0; }
-}
-
-.flow-line {
-  animation: flow 3s linear infinite;
-}
-
 /* ─── XAI bar animation ─────────────────────────────────────────────────────── */
 @keyframes bar-grow {
   from { width: 0; }
@@ -159,7 +151,7 @@ input[type="range"].white-thumb::-webkit-slider-thumb {
   animation: bar-grow 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ─── Number count-up ────────────────────────────────────────────────────────── */
+/* ─── Count-up animation ─────────────────────────────────────────────────────── */
 @keyframes count-up {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -167,4 +159,17 @@ input[type="range"].white-thumb::-webkit-slider-thumb {
 
 .count-animate {
   animation: count-up 0.6s ease both;
+}
+
+/* ─── Minimalist card helpers ────────────────────────────────────────────────── */
+.bw-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bw-card:hover {
+  border-color: #0a0a0a;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
 }

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { EVStation, ChargerType, GridStressLevel } from '../types/ev';
-import { Zap, MapPin, Filter, Info, Sun, Clock, DollarSign, ArrowRight, Sparkles } from 'lucide-react';
+import { RealMap } from './RealMap';
+import { Zap, MapPin, Filter, Info, Sun, Clock, DollarSign, ArrowRight, Sparkles, Layers } from 'lucide-react';
 
 interface StationMapProps {
   stations: EVStation[];
@@ -22,7 +23,7 @@ export const StationMap: React.FC<StationMapProps> = ({
   const [selectedStation, setSelectedStation] = useState<EVStation | null>(
     stations.find(s => s.id === selectedStationId) || stations[0]
   );
-  const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
+  const [showGridLines, setShowGridLines] = useState<boolean>(true);
 
   const filteredStations = stations.filter(st => {
     if (filterConnector !== 'ALL') {
@@ -35,27 +36,20 @@ export const StationMap: React.FC<StationMapProps> = ({
     return true;
   });
 
-  const getPinStyle = (stress: GridStressLevel, portsAvail: number) => {
-    if (portsAvail === 0) return { bg: 'bg-neutral-400', text: 'text-white', border: 'border-neutral-500', label: 'FULL' };
-    if (stress === 'critical') return { bg: 'bg-black', text: 'text-white', border: 'border-black', label: 'HIGH SURGE' };
-    if (stress === 'low') return { bg: 'bg-white', text: 'text-black', border: 'border-black', label: 'OPTIMAL' };
-    return { bg: 'bg-neutral-900', text: 'text-white', border: 'border-black', label: 'MODERATE' };
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 sm:p-8 max-w-7xl mx-auto">
       
-      {/* Map Column */}
+      {/* Real Leaflet Map Column */}
       <div className="lg:col-span-8 space-y-5">
         
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-black">
             <Filter className="h-4 w-4" />
-            <span>Geospatial Map Filters:</span>
+            <span>Interactive Real Map Controls:</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-sans">
             <select
               value={filterConnector}
               onChange={(e) => setFilterConnector(e.target.value as any)}
@@ -79,103 +73,30 @@ export const StationMap: React.FC<StationMapProps> = ({
             </select>
 
             <button
-              onClick={() => setShowHeatmap(!showHeatmap)}
+              onClick={() => setShowGridLines(!showGridLines)}
               className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
-                showHeatmap
+                showGridLines
                   ? 'bg-black text-white'
                   : 'bg-neutral-100 text-black border border-neutral-300'
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              Grid Load Grid
+              <Layers className="h-3.5 w-3.5" />
+              Substation Lines
             </button>
           </div>
         </div>
 
-        {/* B&W Map Visualizer Canvas Container */}
-        <div className="relative h-[500px] w-full rounded-2xl border-2 border-neutral-300 bg-white overflow-hidden bg-dot-pattern shadow-sm">
-          
-          {/* Grid Overhead High-Voltage Lines (SVG) */}
-          <svg className="absolute inset-0 h-full w-full pointer-events-none opacity-30">
-            <line x1="20%" y1="25%" x2="45%" y2="60%" stroke="#000000" strokeWidth="2" strokeDasharray="6,6" />
-            <line x1="45%" y1="60%" x2="75%" y2="35%" stroke="#000000" strokeWidth="2" strokeDasharray="6,6" />
-            <line x1="75%" y1="35%" x2="82%" y2="78%" stroke="#000000" strokeWidth="2" strokeDasharray="6,6" />
-            <line x1="45%" y1="60%" x2="25%" y2="80%" stroke="#000000" strokeWidth="2" strokeDasharray="6,6" />
-          </svg>
-
-          {/* Substation Nodes */}
-          <div className="absolute top-5 left-5 flex items-center gap-2 bg-white border border-black rounded-xl px-3 py-1.5 text-xs font-bold font-mono text-black shadow-sm">
-            <span className="h-2.5 w-2.5 rounded-full bg-black"></span>
-            <span>Substation TX-101 (Downtown Core)</span>
-          </div>
-
-          <div className="absolute bottom-5 right-5 flex items-center gap-2 bg-white border border-black rounded-xl px-3 py-1.5 text-xs font-bold font-mono text-black shadow-sm">
-            <span className="h-2.5 w-2.5 rounded-full bg-black"></span>
-            <span>Substation TX-104 (Solar Microgrid)</span>
-          </div>
-
-          {/* Station Markers */}
-          {filteredStations.map((st, idx) => {
-            const pin = getPinStyle(st.gridStressLevel, st.availablePorts);
-            const isSelected = selectedStation?.id === st.id;
-
-            const positions = [
-              { top: '35%', left: '28%' },
-              { top: '65%', left: '72%' },
-              { top: '42%', left: '52%' },
-              { top: '22%', left: '80%' },
-              { top: '78%', left: '22%' },
-              { top: '18%', left: '48%' }
-            ];
-
-            const pos = positions[idx % positions.length];
-
-            return (
-              <div
-                key={st.id}
-                style={{ top: pos.top, left: pos.left }}
-                onClick={() => {
-                  setSelectedStation(st);
-                  onSelectStation(st);
-                }}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group transition-all duration-200 ${
-                  isSelected ? 'z-30 scale-125' : 'z-10 hover:scale-110'
-                }`}
-              >
-                {/* Station Pin */}
-                <div className={`relative flex items-center justify-center h-12 w-12 rounded-2xl border-2 ${pin.border} ${pin.bg} ${pin.text} shadow-md transition-all`}>
-                  <Zap className="h-6 w-6 stroke-[2.5]" />
-
-                  {/* Availability pill */}
-                  <span className="absolute -bottom-2 -right-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black text-white px-1 text-[10px] font-black border border-white">
-                    {st.availablePorts}/{st.totalPorts}
-                  </span>
-                </div>
-
-                {/* Hover Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-14 hidden group-hover:flex flex-col items-center pointer-events-none z-40 w-48">
-                  <div className="bg-black text-white text-xs rounded-xl p-2.5 shadow-xl text-center space-y-1">
-                    <p className="font-bold truncate">{st.name}</p>
-                    <p className="text-[11px] font-mono text-neutral-300">${st.currentTariff}/kWh • {st.waitingTimeMins}m wait</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Legend */}
-          <div className="absolute bottom-5 left-5 bg-white/95 border border-neutral-300 rounded-xl p-3 text-xs space-y-1 font-mono shadow-sm">
-            <p className="font-bold text-black mb-1">Status Legend:</p>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full border border-black bg-white"></span>
-              <span className="text-neutral-700">Optimal (Off-Peak / High Solar)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-black"></span>
-              <span className="text-neutral-700">High Peak Surge / Stressed</span>
-            </div>
-          </div>
-        </div>
+        {/* Real Leaflet Map Render */}
+        <RealMap
+          stations={filteredStations}
+          selectedStationId={selectedStation?.id}
+          onSelectStation={(st) => {
+            setSelectedStation(st);
+            onSelectStation(st);
+          }}
+          onBookStation={onBookStation}
+          showGridLines={showGridLines}
+        />
       </div>
 
       {/* Selected Station Drawer */}
@@ -189,7 +110,7 @@ export const StationMap: React.FC<StationMapProps> = ({
               <h3 className="text-xl font-black text-black leading-tight">{selectedStation.name}</h3>
               <p className="text-xs text-neutral-600 mt-1 flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5 text-black" />
-                {selectedStation.address} ({selectedStation.distanceKm} km)
+                {selectedStation.address} ({selectedStation.distanceKm} km away)
               </p>
             </div>
 
@@ -210,11 +131,11 @@ export const StationMap: React.FC<StationMapProps> = ({
               </div>
             </div>
 
-            {/* Clean Solar Mix Bar */}
+            {/* Solar Mix Bar */}
             <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-black flex items-center gap-1">
-                  <Sun className="h-3.5 w-3.5" /> Renewable Energy
+                  <Sun className="h-3.5 w-3.5" /> Renewable Mix
                 </span>
                 <span className="font-mono">{selectedStation.renewablePercent}% Clean</span>
               </div>
@@ -226,7 +147,7 @@ export const StationMap: React.FC<StationMapProps> = ({
               </div>
             </div>
 
-            {/* Ports */}
+            {/* Available Ports */}
             <div className="space-y-2">
               <h4 className="text-xs font-black uppercase tracking-wider text-black">Available Ports</h4>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">

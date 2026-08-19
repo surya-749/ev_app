@@ -16,10 +16,95 @@ export function estimateChargingDurationMins(
 ): number {
   const effectivePowerKw = Math.min(vehicleMaxKw, portMaxKw);
   if (effectivePowerKw <= 0) return 60;
-  // Calculate average charging speed (tapering after 80% is simplified with 0.85 factor)
   const hours = energyNeededKwh / (effectivePowerKw * 0.88);
   const mins = Math.ceil(hours * 60);
   return Math.max(10, Math.min(180, mins));
+}
+
+export interface StationHourlyTrend {
+  hour: number;
+  timeLabel: string;
+  occupancyPercent: number;
+  expectedPortsOccupied: number;
+  expectedWaitMins: number;
+  predictedTariffRate: number;
+  trendStatus: 'clearing' | 'steady' | 'rising' | 'peak';
+}
+
+/**
+ * Predicts 24-hour occupancy, wait time, and queue trends for a specific station.
+ */
+export function predictStationOccupancyTrend(station: EVStation): {
+  hourlyTrends: StationHourlyTrend[];
+  currentOccupancyPercent: number;
+  expectedPeakHourLabel: string;
+  expectedPeakPercent: number;
+  recommendedBestSlotLabel: string;
+  recommendedBestSlotPercent: number;
+  trendStatus: 'clearing' | 'steady' | 'rising' | 'peak';
+} {
+  const busyPorts = station.totalPorts - station.availablePorts;
+  const currentOccupancyPercent = Math.round((busyPorts / station.totalPorts) * 100);
+
+  // Hourly multiplier baseline patterns for EV hubs (Morning rush 8-9 AM, midday solar drop 1-2 PM, evening rush 5-8 PM)
+  const hourlyMultipliers = [
+    0.15, 0.10, 0.08, 0.08, 0.12, 0.25, 0.45, 0.70, 0.88, 0.82,
+    0.60, 0.35, 0.28, 0.30, 0.42, 0.65, 0.85, 0.95, 0.92, 0.78,
+    0.55, 0.38, 0.25, 0.18
+  ];
+
+  const hourlyTrends: StationHourlyTrend[] = Array.from({ length: 24 }).map((_, h) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    const timeLabel = `${hour12.toString().padStart(2, '0')}:00 ${ampm}`;
+
+    let baseFactor = hourlyMultipliers[h];
+    // Adjust based on station category
+    if (station.category === 'SolarMicrogrid' && h >= 11 && h <= 14) {
+      baseFactor *= 1.3; // High solar utilization
+    } else if (station.category === 'Superhub' && (h === 8 || h === 18)) {
+      baseFactor = Math.min(0.98, baseFactor * 1.15);
+    }
+
+    const occPercent = Math.min(100, Math.max(8, Math.round(baseFactor * 100)));
+    const occupiedPorts = Math.min(station.totalPorts, Math.round((occPercent / 100) * station.totalPorts));
+    const waitMins = occPercent > 80 ? Math.round((occPercent - 75) * 0.8) : 0;
+    const tariff = Math.round(station.baseTariff * (occPercent > 75 ? 1.25 : occPercent < 40 ? 0.75 : 1.0));
+
+    let trendStatus: 'clearing' | 'steady' | 'rising' | 'peak' = 'steady';
+    if (occPercent > 85) trendStatus = 'peak';
+    else if (h > 0 && occPercent > hourlyMultipliers[h - 1] * 100 + 10) trendStatus = 'rising';
+    else if (h > 0 && occPercent < hourlyMultipliers[h - 1] * 100 - 10) trendStatus = 'clearing';
+
+    return {
+      hour: h,
+      timeLabel,
+      occupancyPercent: occPercent,
+      expectedPortsOccupied: occupiedPorts,
+      expectedWaitMins: waitMins,
+      predictedTariffRate: tariff,
+      trendStatus
+    };
+  });
+
+  // Find peak hour and best off-peak hour
+  const peakPoint = [...hourlyTrends].sort((a, b) => b.occupancyPercent - a.occupancyPercent)[0];
+  const bestPoint = [...hourlyTrends].filter(t => t.hour >= 8 && t.hour <= 22).sort((a, b) => a.occupancyPercent - b.occupancyPercent)[0] || hourlyTrends[12];
+
+  let currentTrendStatus: 'clearing' | 'steady' | 'rising' | 'peak' = 'steady';
+  if (currentOccupancyPercent > 80) currentTrendStatus = 'peak';
+  else if (currentOccupancyPercent > 55) currentTrendStatus = 'rising';
+  else currentTrendStatus = 'clearing';
+
+  return {
+    hourlyTrends,
+    currentOccupancyPercent,
+    expectedPeakHourLabel: peakPoint.timeLabel,
+    expectedPeakPercent: peakPoint.occupancyPercent,
+    recommendedBestSlotLabel: bestPoint.timeLabel,
+    recommendedBestSlotPercent: bestPoint.occupancyPercent,
+    trendStatus: currentTrendStatus
+  };
 }
 
 export function getSmartStationRecommendations(
@@ -32,7 +117,6 @@ export function getSmartStationRecommendations(
   const energyNeeded = calculateEnergyNeeded(currentSoC, targetSoC, vehicle.batteryCapacityKwh);
 
   const scoredStations = stations.map(station => {
-    // Find compatible port with highest speed
     const compatiblePorts = station.ports.filter(p =>
       vehicle.supportedConnectors.includes(p.type)
     );
@@ -42,12 +126,11 @@ export function getSmartStationRecommendations(
       : station.ports[0];
 
     const durationMins = estimateChargingDurationMins(energyNeeded, vehicle.maxChargingPowerKw, bestPort.maxPowerKw);
-    const cost = Number((energyNeeded * station.currentTariff).toFixed(2));
-    const standardCost = Number((energyNeeded * 0.42).toFixed(2)); // baseline standard rate
-    const savingsAmount = Math.max(0, Number((standardCost - cost).toFixed(2)));
+    const cost = Math.round(energyNeeded * station.currentTariff);
+    const standardCost = Math.round(energyNeeded * 20); // Baseline ₹20/kWh
+    const savingsAmount = Math.max(0, standardCost - cost);
     const savingsPercent = standardCost > 0 ? Math.round((savingsAmount / standardCost) * 100) : 0;
 
-    // Grid score (0 to 100) based on renewable %, low stress level, and low wait time
     let gridScore = 50;
     if (station.renewablePercent > 70) gridScore += 25;
     else if (station.renewablePercent > 40) gridScore += 10;
@@ -60,7 +143,6 @@ export function getSmartStationRecommendations(
 
     gridScore = Math.min(100, Math.max(10, gridScore));
 
-    // Time slot formatting
     const startMins = preferredHour * 60 + 15;
     const endMins = startMins + durationMins;
     const formatTime = (totalMins: number) => {
@@ -73,13 +155,13 @@ export function getSmartStationRecommendations(
 
     const slotTimeLabel = `${formatTime(startMins)} - ${formatTime(endMins)}`;
 
-    let matchReason = 'Balanced choice with good charger speed.';
+    let matchReason = 'Optimal charger speed for Tata, MG, and Hyundai EVs.';
     if (station.renewablePercent >= 80 && station.currentTariff < station.baseTariff) {
-      matchReason = `🌿 High Green Solar Energy (${station.renewablePercent}%) & Off-Peak Rate!`;
-    } else if (bestPort.maxPowerKw >= 200) {
-      matchReason = `⚡ Ultra-Fast ${bestPort.maxPowerKw}kW Charger - Save ${durationMins} mins!`;
-    } else if (station.distanceKm <= 2.0) {
-      matchReason = `📍 Closest to your current route (${station.distanceKm} km away)`;
+      matchReason = `Solar Peak Clean Power (${station.renewablePercent}%) & Discounted Rate (₹${station.currentTariff}/kWh)!`;
+    } else if (bestPort.maxPowerKw >= 150) {
+      matchReason = `Tata Power / Jio-bp ${bestPort.maxPowerKw}kW Ultra-Fast Charger!`;
+    } else if (station.distanceKm <= 3.0) {
+      matchReason = `Closest charging hub near your route (${station.distanceKm} km away)`;
     }
 
     return {
@@ -98,7 +180,6 @@ export function getSmartStationRecommendations(
     };
   });
 
-  // Sort recommendations by composite score
   return scoredStations.sort((a, b) => b.gridScore - a.gridScore);
 }
 

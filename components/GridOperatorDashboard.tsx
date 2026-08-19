@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { GridTransformerNode, EVStation } from '../types/ev';
-import { Cpu, Zap, Sliders, ToggleLeft, ToggleRight, Activity, Thermometer, Sun } from 'lucide-react';
+import { Cpu, Zap, Sliders, ToggleLeft, ToggleRight, Activity } from 'lucide-react';
 
 interface GridOperatorDashboardProps {
   transformers: GridTransformerNode[];
@@ -41,10 +41,10 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
             <div className="h-8 w-8 rounded-lg bg-black text-white flex items-center justify-center font-bold">
               <Cpu className="h-4 w-4" />
             </div>
-            <h2 className="text-xl font-black text-black">Power Grid Operator Command Center</h2>
+            <h2 className="text-xl font-black text-black">Power Grid Operator Command Center (India)</h2>
           </div>
           <p className="text-xs text-neutral-600 mt-1">
-            Real-time transformer monitoring, peak shaving dispatch, and dynamic pricing rules.
+            Real-time Indian substation monitoring, Tata Power / Jio-bp peak load shaving, and dynamic pricing rules.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
         <div className="bg-white border border-neutral-200 rounded-2xl p-6 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-black text-black uppercase tracking-wider flex items-center gap-1.5">
-              <Sliders className="h-4 w-4" /> Tariff Multiplier
+              <Sliders className="h-4 w-4" /> Dynamic Tariff Multiplier
             </span>
             <span className="text-sm font-black font-mono text-white bg-black px-2.5 py-1 rounded-lg">
               {tariffMultiplier.toFixed(1)}x
@@ -72,7 +72,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
           </div>
 
           <p className="text-xs text-neutral-600">
-            Adjust surge multiplier to disincentivize charging during peak grid hours.
+            Adjust surge multiplier to disincentivize charging during peak DISCOM grid hours.
           </p>
 
           <input
@@ -102,7 +102,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
           </div>
 
           <p className="text-xs text-neutral-600">
-            Caps charger output to 80kW when local substation load exceeds 85%.
+            Caps fast charger output to 80kW when local transformer load exceeds 85%.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
           </div>
 
           <p className="text-xs text-neutral-600">
-            Discharges energy back into grid for $0.65/kWh credit during grid peaks.
+            Discharges EV energy back into grid for ₹35/kWh credit during grid peaks.
           </p>
         </div>
       </div>
@@ -131,7 +131,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
       <div className="space-y-4">
         <h3 className="text-base font-black uppercase tracking-wider text-black flex items-center gap-2">
           <Cpu className="h-4 w-4" />
-          Substation Transformer Nodes
+          Indian Substation Transformer Nodes
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -172,7 +172,7 @@ export const GridOperatorDashboard: React.FC<GridOperatorDashboardProps> = ({
                   onClick={() => onThrottleTransformer(t.id)}
                   className="w-full rounded-xl bg-black text-white hover:bg-neutral-800 py-2.5 text-xs font-black uppercase tracking-wider transition-all shadow-sm"
                 >
-                  Balance Transformer Load
+                  Balance Substation Load
                 </button>
               </div>
             );

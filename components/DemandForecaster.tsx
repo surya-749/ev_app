@@ -52,10 +52,10 @@ export const DemandForecaster: React.FC<DemandForecasterProps> = ({
             <div className="h-8 w-8 rounded-lg bg-black text-white flex items-center justify-center font-bold">
               <Activity className="h-4 w-4" />
             </div>
-            <h2 className="text-xl font-black text-black">24-Hour Demand Forecasting & Load Shaving</h2>
+            <h2 className="text-xl font-black text-black">24-Hour India Demand Forecasting & Load Shaving</h2>
           </div>
           <p className="text-xs text-neutral-600 mt-1">
-            Predictive machine learning analytics comparing baseline uncoordinated load vs AI load-balanced dispatch.
+            Predictive machine learning analytics comparing baseline uncoordinated load vs AI load-balanced dispatch across Indian cities.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export const DemandForecaster: React.FC<DemandForecasterProps> = ({
         <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-2 shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Grid Tariff Rate</p>
           <p className="text-3xl font-black text-black font-mono">
-            ${currentPoint.tariffRate} <span className="text-xs text-neutral-500 font-normal">/kWh</span>
+            ₹{currentPoint.tariffRate} <span className="text-xs text-neutral-500 font-normal">/kWh</span>
           </p>
           <p className="text-xs font-bold text-neutral-600">{currentPoint.timeLabel} Dynamic Rate</p>
         </div>
@@ -132,7 +132,7 @@ export const DemandForecaster: React.FC<DemandForecasterProps> = ({
                   : 'bg-neutral-100 text-black border border-neutral-300'
               }`}
             >
-              Dynamic Pricing Curve ($/kWh)
+              Dynamic Pricing Curve (₹/kWh)
             </button>
           </div>
 
@@ -176,12 +176,12 @@ export const DemandForecaster: React.FC<DemandForecasterProps> = ({
               <LineChart data={forecastData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
                 <XAxis dataKey="timeLabel" stroke="#171717" fontSize={11} fontWeight={600} />
-                <YAxis stroke="#171717" fontSize={11} fontWeight={600} unit=" $" domain={[0, 0.7]} />
+                <YAxis stroke="#171717" fontSize={11} fontWeight={600} unit=" ₹" domain={[0, 30]} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#000000', borderRadius: '12px', color: '#000', fontSize: '12px', fontWeight: 'bold' }}
                 />
                 <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px', fontWeight: 'bold' }} />
-                <Line type="monotone" dataKey="tariffRate" name="Dynamic Tariff ($/kWh)" stroke="#000000" strokeWidth={3} dot={{ r: 4, fill: '#000000' }} />
+                <Line type="monotone" dataKey="tariffRate" name="Dynamic Tariff (₹/kWh)" stroke="#000000" strokeWidth={3} dot={{ r: 4, fill: '#000000' }} />
               </LineChart>
             )}
           </ResponsiveContainer>

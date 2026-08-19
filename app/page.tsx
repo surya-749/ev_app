@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { SmartRecommender } from '../components/SmartRecommender';
 import { StationMap } from '../components/StationMap';
@@ -8,6 +8,7 @@ import { DemandForecaster } from '../components/DemandForecaster';
 import { GridOperatorDashboard } from '../components/GridOperatorDashboard';
 import { SlotBookingModal } from '../components/SlotBookingModal';
 import { SimulationToolbar } from '../components/SimulationToolbar';
+import { fetchRealEVStationsFromOpenChargeMap } from '../lib/evApi';
 
 import {
   INITIAL_STATIONS,
@@ -25,6 +26,21 @@ export default function Home() {
   const [transformers, setTransformers] = useState<GridTransformerNode[]>(INITIAL_GRID_TRANSFORMERS);
   const [forecastData, setForecastData] = useState<DemandDataPoint[]>(HOURLY_DEMAND_FORECAST);
   const [reservations, setReservations] = useState<Reservation[]>(INITIAL_RESERVATIONS);
+
+  // Auto-fetch real EV stations from OpenChargeMap API on app load
+  useEffect(() => {
+    async function initRealStations() {
+      try {
+        const realData = await fetchRealEVStationsFromOpenChargeMap(12.9716, 77.5946, 12, 'bengaluru');
+        if (realData && realData.length > 0) {
+          setStations(realData);
+        }
+      } catch (e) {
+        console.error('Failed to init real EV stations:', e);
+      }
+    }
+    initRealStations();
+  }, []);
 
   // Simulation states
   const [simulatedHour, setSimulatedHour] = useState<number>(14);
@@ -61,18 +77,18 @@ export default function Home() {
         t.id === 'TX-103' ? { ...t, currentLoadKw: 1450, status: 'overloaded', temperatureC: 81 } : t
       ));
       setStations(prev => prev.map(s => 
-        s.id === 'st-4' ? { ...s, currentTariff: 0.58, waitingTimeMins: 35, gridStressLevel: 'critical' } : s
+        s.id === 'st-4' ? { ...s, currentTariff: 28, waitingTimeMins: 35, gridStressLevel: 'critical' } : s
       ));
     } else if (scenario === 'solar_drop') {
       setSimulatedHour(13); // 1 PM Solar Max
       setTariffMultiplier(0.7);
       setStations(prev => prev.map(s => 
-        s.category === 'SolarMicrogrid' ? { ...s, currentTariff: 0.16, renewablePercent: 98, gridStressLevel: 'low' } : s
+        s.category === 'SolarMicrogrid' ? { ...s, currentTariff: 12, renewablePercent: 98, gridStressLevel: 'low' } : s
       ));
     } else if (scenario === 'grid_emergency') {
       setSimulatedHour(17);
       setTransformers(prev => prev.map(t => ({ ...t, status: 'stressed', currentLoadKw: Math.round(t.capacityKw * 0.9) })));
-      setStations(prev => prev.map(s => ({ ...s, gridStressLevel: 'critical', currentTariff: Number((s.baseTariff * 1.8).toFixed(2)) })));
+      setStations(prev => prev.map(s => ({ ...s, gridStressLevel: 'critical', currentTariff: Number((s.baseTariff * 1.5).toFixed(0)) })));
     }
   };
 
@@ -140,6 +156,7 @@ export default function Home() {
             stations={stations}
             onSelectStation={(st) => setSelectedBookingStation(st)}
             onBookStation={(st) => handleOpenBookingForStation(st)}
+            onUpdateStations={(newStations) => setStations(newStations)}
           />
         )}
 
@@ -163,7 +180,7 @@ export default function Home() {
               setTariffMultiplier(val);
               setStations(prev => prev.map(s => ({
                 ...s,
-                currentTariff: Number((s.baseTariff * val).toFixed(2))
+                currentTariff: Number((s.baseTariff * val).toFixed(0))
               })));
             }}
             loadShavingActive={loadShavingActive}
@@ -196,18 +213,18 @@ export default function Home() {
         onConfirmBooking={handleConfirmBooking}
       />
 
-      {/* Active Digital Reservations Side Drawer (B&W Style) */}
+      {/* Active Digital Reservations Side Drawer (z-[100] guarantee) */}
       {isReservationsDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white border-l-2 border-black p-6 space-y-6 overflow-y-auto h-full shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex justify-end bg-black/40 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white border-l border-neutral-200 p-6 space-y-6 overflow-y-auto h-full shadow-2xl z-[101]">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-black" />
-                <h3 className="text-lg font-black text-black">Active Charging Passes</h3>
+                <Calendar className="h-5 w-5 text-neutral-900" />
+                <h3 className="text-lg font-bold text-neutral-900">Active Charging Passes</h3>
               </div>
               <button
                 onClick={() => setIsReservationsDrawerOpen(false)}
-                className="text-black hover:bg-neutral-100 p-2 rounded-full border border-neutral-300"
+                className="text-neutral-700 hover:bg-neutral-100 p-2 rounded-full border border-neutral-200"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -216,7 +233,7 @@ export default function Home() {
             {reservations.length === 0 ? (
               <div className="text-center text-neutral-500 py-12 space-y-2 font-mono">
                 <Zap className="h-10 w-10 text-neutral-300 mx-auto" />
-                <p className="text-sm font-bold text-black">No active passes</p>
+                <p className="text-sm font-bold text-neutral-900">No active passes</p>
                 <p className="text-xs">Book charging slots from the Smart Finder or Map.</p>
               </div>
             ) : (
@@ -224,17 +241,17 @@ export default function Home() {
                 {reservations.map((res) => (
                   <div
                     key={res.id}
-                    className="bg-white border-2 border-black rounded-2xl p-5 space-y-3 shadow-md"
+                    className="bg-white border border-neutral-200/80 rounded-2xl p-5 space-y-3 shadow-2xs hover:border-neutral-400 transition-all"
                   >
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="font-black text-black">{res.id}</span>
-                      <span className="bg-black text-white font-bold px-2.5 py-0.5 rounded text-[10px] uppercase">
+                      <span className="font-extrabold text-neutral-900">{res.id}</span>
+                      <span className="bg-neutral-900 text-white font-bold px-2.5 py-0.5 rounded-full text-[10px] uppercase">
                         {res.status}
                       </span>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-black text-black leading-tight">{res.stationName}</h4>
+                      <h4 className="text-sm font-bold text-neutral-900 leading-tight">{res.stationName}</h4>
                       <p className="text-xs text-neutral-600">{res.locationName}</p>
                     </div>
 
@@ -250,8 +267,8 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-1 font-mono">
-                      <span className="text-neutral-600">Total Price: <span className="text-black font-black">${res.totalCost}</span></span>
-                      <span className="text-black font-bold">Saved ${res.savingsAmount}</span>
+                      <span className="text-neutral-600">Total Price: <span className="text-black font-black">₹{res.totalCost}</span></span>
+                      <span className="text-black font-bold">Saved ₹{res.savingsAmount}</span>
                     </div>
                   </div>
                 ))}

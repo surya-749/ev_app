@@ -32,10 +32,10 @@ export const SimulationToolbar: React.FC<SimulationToolbarProps> = ({
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-3xl rounded-2xl border-2 border-black bg-white/95 p-3 shadow-xl backdrop-blur-md">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-3xl rounded-2xl border border-neutral-200 bg-white/95 p-3 shadow-xl backdrop-blur-md">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-sans">
         
-        <div className="flex items-center gap-2 text-black font-black uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-neutral-900 font-bold uppercase tracking-wider">
           <Sparkles className="h-4 w-4 text-black" />
           <span>Sandbox Presets:</span>
         </div>

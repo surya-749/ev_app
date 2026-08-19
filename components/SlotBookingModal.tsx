@@ -34,26 +34,26 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
   if (!isOpen || !station) return null;
 
   const portToUse = selectedPort || station.ports[0];
-  const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Tesla Model Y';
-  const batteryCap = vehicle ? vehicle.batteryCapacityKwh : 75;
+  const vehicleName = vehicle ? `${vehicle.brand} ${vehicle.model}` : 'Tata Nexon EV Max';
+  const batteryCap = vehicle ? vehicle.batteryCapacityKwh : 40.5;
   const energyKwh = Number((((initialTargetSoC - initialStartSoC) / 100) * batteryCap).toFixed(1));
 
-  const totalCost = Number((energyKwh * station.currentTariff).toFixed(2));
-  const standardCost = Number((energyKwh * 0.42).toFixed(2));
-  const savings = Math.max(0, Number((standardCost - totalCost).toFixed(2)));
+  const totalCost = Math.round(energyKwh * station.currentTariff);
+  const standardCost = Math.round(energyKwh * 20); // ₹20/kWh standard rate
+  const savings = Math.max(0, standardCost - totalCost);
 
   const timeSlots = [
-    '11:00 - 11:35 (☀️ Solar Peak Slot)',
-    '12:15 - 12:50 (☀️ Off-Peak Rate)',
-    '13:30 - 14:05 (☀️ Off-Peak Rate)',
-    '14:15 - 14:50 (⚡ Fast Charger)',
+    '11:00 - 11:35 (Solar Peak Slot)',
+    '12:15 - 12:50 (Off-Peak Tariff)',
+    '13:30 - 14:05 (Off-Peak Tariff)',
+    '14:15 - 14:50 (Fast Charger Slot)',
     '15:00 - 15:35',
     '16:30 - 17:05 (Moderate Load)',
-    '20:00 - 20:35 (🌙 Night Rate)'
+    '20:00 - 20:35 (Night Tariff)'
   ];
 
   const handleCompleteBooking = () => {
-    const resId = `EV-PASS-${Math.floor(1000 + Math.random() * 9000)}`;
+    const resId = `EV-IN-${Math.floor(1000 + Math.random() * 9000)}`;
     const qrSeed = `EV-${station.id.toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newRes: Reservation = {
@@ -94,8 +94,8 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-3xl bg-white border-2 border-black p-6 shadow-2xl space-y-5 overflow-hidden text-black">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div className="relative w-full max-w-lg rounded-3xl bg-white border border-neutral-200 p-6 shadow-2xl space-y-5 overflow-hidden text-neutral-900 z-[101]">
         
         {/* Close Button */}
         <button
@@ -109,7 +109,7 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
           <>
             <div>
               <span className="inline-flex items-center gap-1 text-black font-black text-xs uppercase tracking-widest bg-neutral-100 border border-neutral-300 px-3 py-0.5 rounded-full mb-1">
-                <Zap className="h-3.5 w-3.5" /> Slot Pass Booking
+                <Zap className="h-3.5 w-3.5" /> India Slot Reservation
               </span>
               <h3 className="text-2xl font-black text-black leading-tight mt-1">{station.name}</h3>
               <p className="text-xs text-neutral-600">{station.address}</p>
@@ -158,15 +158,15 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                 <span className="text-black font-bold">{vehicleName}</span>
               </div>
               <div className="flex justify-between text-neutral-600">
-                <span>Target Energy:</span>
+                <span>Energy Required:</span>
                 <span className="text-black font-bold">{initialStartSoC}% → {initialTargetSoC}% ({energyKwh} kWh)</span>
               </div>
               <div className="pt-2 border-t border-neutral-200 flex justify-between items-baseline">
-                <span className="font-black text-black text-sm uppercase">Total Price:</span>
+                <span className="font-black text-black text-sm uppercase">Total Reservation Price:</span>
                 <div className="text-right">
-                  <span className="text-2xl font-black text-black font-mono">${totalCost}</span>
+                  <span className="text-2xl font-black text-black font-mono">₹{totalCost}</span>
                   {savings > 0 && (
-                    <p className="text-[10px] font-bold text-black">Save ${savings} (Off-Peak)</p>
+                    <p className="text-[10px] font-bold text-black">Save ₹{savings} (Off-Peak)</p>
                   )}
                 </div>
               </div>
@@ -182,7 +182,6 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
             </button>
           </>
         ) : (
-          /* High Contrast Digital Pass Card */
           <div className="text-center space-y-5 py-2">
             <div className="h-12 w-12 rounded-full bg-black text-white flex items-center justify-center mx-auto border-2 border-black">
               <CheckCircle2 className="h-7 w-7" />
@@ -193,7 +192,6 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
               <p className="text-xs text-neutral-600 mt-1">Show this QR pass at the charging hub terminal.</p>
             </div>
 
-            {/* QR Pass Box */}
             <div className="bg-white border-2 border-black rounded-2xl p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between text-xs border-b border-neutral-200 pb-3 font-mono">
                 <span className="font-black text-black">{confirmedReservation?.id}</span>
@@ -202,7 +200,6 @@ export const SlotBookingModal: React.FC<SlotBookingModalProps> = ({
                 </span>
               </div>
 
-              {/* QR Code Container */}
               <div className="bg-neutral-100 p-4 rounded-xl inline-block border border-neutral-300 mx-auto my-1">
                 <QrCode className="h-28 w-28 text-black" />
               </div>
